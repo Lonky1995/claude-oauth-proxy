@@ -23,7 +23,7 @@ import re as _re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 
-OAUTH_BETAS = "oauth-2025-04-20"
+OAUTH_BETAS = "oauth-2025-04-20,claude-code-20250219,fine-grained-tool-streaming-2025-05-14,interleaved-thinking-2025-05-14,context-management-2025-06-27"
 CLAUDE_CODE_SYSTEM = "You are Claude Code, Anthropic's official CLI for Claude."
 USER_AGENT = "claude-cli/1.0.0"
 UPSTREAM_HOST = "api.anthropic.com"
