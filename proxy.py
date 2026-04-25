@@ -55,17 +55,36 @@ def load_token(path):
 
 
 def inject_claude_code_system(body):
-    """Prepend Claude Code identity system prompt (required for OAuth-based access)."""
+    """Convert system to array-of-text-blocks with Claude Code identity FIRST.
+
+    Anthropic OAuth 强制要求：system 字段必须是 array，第一个 block 必须 EXACTLY 是
+    Claude Code identity prompt。如果传 string 含自定义内容会返回伪装的 429
+    (rate_limit_error "Error")。
+    """
+    cc_block = {"type": "text", "text": CLAUDE_CODE_SYSTEM}
     existing = body.get("system")
-    if isinstance(existing, str):
-        if CLAUDE_CODE_SYSTEM not in existing:
-            body["system"] = CLAUDE_CODE_SYSTEM + "\n\n" + existing
+
+    if existing is None or existing == "":
+        body["system"] = [cc_block]
+    elif isinstance(existing, str):
+        # Strip leading CC identity if user already added it (avoid duplicate)
+        stripped = existing
+        if stripped.startswith(CLAUDE_CODE_SYSTEM):
+            stripped = stripped[len(CLAUDE_CODE_SYSTEM):].lstrip()
+        if stripped:
+            body["system"] = [cc_block, {"type": "text", "text": stripped}]
+        else:
+            body["system"] = [cc_block]
     elif isinstance(existing, list):
-        has = any(CLAUDE_CODE_SYSTEM in (b.get("text") or "") for b in existing if isinstance(b, dict))
-        if not has:
-            body["system"] = [{"type": "text", "text": CLAUDE_CODE_SYSTEM}] + existing
-    else:
-        body["system"] = CLAUDE_CODE_SYSTEM
+        # Check if first block is already CC identity
+        first = existing[0] if existing else None
+        is_cc = isinstance(first, dict) and first.get("text", "").strip() == CLAUDE_CODE_SYSTEM
+        if is_cc:
+            body["system"] = existing
+        else:
+            # Filter out any non-leading CC blocks from middle (avoid duplicate)
+            cleaned = [b for b in existing if not (isinstance(b, dict) and b.get("text", "").strip() == CLAUDE_CODE_SYSTEM)]
+            body["system"] = [cc_block] + cleaned
     return body
 
 
