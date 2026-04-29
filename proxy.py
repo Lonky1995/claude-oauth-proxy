@@ -112,7 +112,7 @@ def connect_upstream():
             raise ValueError(f"bad HTTPS_PROXY: {proxy_url}")
         proxy_host, proxy_port = m.group(1), int(m.group(2))
 
-        sock = socket.create_connection((proxy_host, proxy_port), timeout=30)
+        sock = socket.create_connection((proxy_host, proxy_port), timeout=120)
         connect_req = f"CONNECT {UPSTREAM_HOST}:{UPSTREAM_PORT} HTTP/1.1\r\nHost: {UPSTREAM_HOST}:{UPSTREAM_PORT}\r\n\r\n"
         sock.sendall(connect_req.encode())
         resp = b""
@@ -126,7 +126,7 @@ def connect_upstream():
             raise ConnectionError(f"proxy CONNECT failed: {status_line!r}")
         log(f"  CONNECT tunnel via {proxy_url}")
     else:
-        sock = socket.create_connection((UPSTREAM_HOST, UPSTREAM_PORT), timeout=30)
+        sock = socket.create_connection((UPSTREAM_HOST, UPSTREAM_PORT), timeout=120)
 
     ctx = ssl.create_default_context()
     tls_sock = ctx.wrap_socket(sock, server_hostname=UPSTREAM_HOST)
